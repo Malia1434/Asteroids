@@ -24,6 +24,12 @@ public class Player : MonoBehaviour
     public Camera cam;
     private Vector2 cam_bottom_left = Vector2.zero;
     private Vector2 cam_top_right = Vector2.zero;
+    private float wrap_radius = 0.16f;
+
+    //Ship Visuals
+    public GameObject ship_sprite;
+    private float jitter_amount = 0.04f;
+    public GameObject fire_sprite;
 
     public void CaptureMoveInput (InputAction.CallbackContext context)
     {
@@ -40,6 +46,8 @@ public class Player : MonoBehaviour
         //Convert them to world space.
         cam_bottom_left = cam.ScreenToWorldPoint(cam_bottom_left);
         cam_top_right = cam.ScreenToWorldPoint(cam_top_right);
+        //Disable fire sprite at the start of the game.
+        fire_sprite.SetActive(false);
         
     }
 
@@ -49,24 +57,24 @@ public class Player : MonoBehaviour
 
         //Screen Wrapping
         //Right Side
-        if (rb.position.x > cam_top_right.x)
+        if (rb.position.x - wrap_radius > cam_top_right.x)
         {
-            rb.MovePosition(new Vector2(cam_bottom_left.x + 0.01f, rb.position.y));
+            rb.MovePosition(new Vector2(cam_bottom_left.x - wrap_radius + 0.01f, rb.position.y));
         }
         //Left Side
-        if (rb.position.x < cam_bottom_left.x)
+        if (rb.position.x + wrap_radius < cam_bottom_left.x)
         {
-            rb.MovePosition(new Vector2(cam_top_right.x + 0.01f, rb.position.y));
+            rb.MovePosition(new Vector2(cam_top_right.x + wrap_radius - 0.01f, rb.position.y));
         }
         //Top Side
-        if (rb.position.y > cam_top_right.y)
+        if (rb.position.y - wrap_radius > cam_top_right.y)
         {
-            rb.MovePosition(new Vector2(cam_top_right.x, cam_bottom_left.y + 0.01f));
+            rb.MovePosition(new Vector2(cam_top_right.x, cam_bottom_left.y - wrap_radius + 0.01f));
         }
         //Bottom Side
-        if (rb.position.y < cam_bottom_left.y)
+        if (rb.position.y + wrap_radius < cam_bottom_left.y)
         {
-            rb.MovePosition(new Vector2(cam_top_right.x, cam_top_right.y - 0.01f));
+            rb.MovePosition(new Vector2(cam_top_right.x, cam_top_right.y + wrap_radius - 0.01f));
         }
         //if holding down W
         if (input_vec.y > 0)
@@ -83,6 +91,14 @@ public class Player : MonoBehaviour
             //Moving the Player
             rb.MovePosition(rb.position + (velocity * Time.fixedDeltaTime));
         }
+        else // If the player is not pressing W Key
+        {
+            //Reset ships position.
+            ship_sprite.transform.localPosition = Vector2.zero;
+
+            //Turn off the fire
+            fire_sprite.SetActive(false);
+        }
 
         //A or D
         if (input_vec.x != 0)
@@ -95,5 +111,17 @@ public class Player : MonoBehaviour
         rb.AddForce(Vector2.up, ForceMode2D.Impulse);
         rb.MovePosition(rb.position + new Vector2(transform.up.x, transform.up.y) * max_speed * Time.fixedDeltaTime);
 
+        //Enable Jitter & Fire sprite
+        fire_sprite.SetActive(true);
+        fire_sprite.transform.localPosition = new Vector2(Random.Range(-jitter_amount, jitter_amount) + 0.01f, Random.Range(-jitter_amount, jitter_amount) - 0.25f);
+        ship_sprite.transform.localPosition = new Vector2(Random.Range(-jitter_amount, jitter_amount), Random.Range(-jitter_amount, jitter_amount));
+
+    }
+
+    private void OnDrawGizmos()
+    {
+        //Show radius
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, wrap_radius);
     }
 }
